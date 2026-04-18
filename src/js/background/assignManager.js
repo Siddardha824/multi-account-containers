@@ -228,6 +228,25 @@ window.assignManager = {
       browser.tabs.get(options.tabId),
       this.storageArea.get(options.url)
     ]);
+
+    // Check if this window is locked to a container
+    const assignedContainerId = await browser.sessions.getWindowValue(tab.windowId, "assignedContainer");
+
+    // If locked, AND the network request is happening in the wrong container context
+    if (assignedContainerId && tab.cookieStoreId !== assignedContainerId) {
+      // Create a new tab with the target URL in the correct container
+      await browser.tabs.create({
+        windowId: tab.windowId,
+        cookieStoreId: assignedContainerId,
+        url: options.url,
+        index: tab.index + 1,
+        active: tab.active
+      });
+      // Close the errant tab and cancel the original request
+      await browser.tabs.remove(tab.id);
+      return { cancel: true };
+    }
+
     let container;
     try {
       container = await browser.contextualIdentities
@@ -429,7 +448,29 @@ window.assignManager = {
       if (this.canceledRequests[options.tabId]) {
         delete this.canceledRequests[options.tabId];
       }
-    },{urls: ["<all_urls>"], types: ["main_frame"]});
+    }, { urls: ["<all_urls>"], types: ["main_frame"] });
+
+    browser.tabs.onCreated.addListener(async (tab) => {
+      const assignedContainerId = await browser.sessions.getWindowValue(tab.windowId, "assignedContainer");
+
+      if (assignedContainerId && tab.cookieStoreId !== assignedContainerId) {
+        // Only recreate the tab if it's a completely empty tab (like pressing Ctrl+T).
+        // We ensure tab.openerTabId is undefined to guarantee we aren't destroying a link click.
+        if ((tab.url === "about:blank" || tab.url === "about:newtab" || tab.url === "about:home") && !tab.openerTabId) {
+
+          // Create the new tab first to ensure the window doesn't accidentally close
+          await browser.tabs.create({
+            windowId: tab.windowId,
+            cookieStoreId: assignedContainerId,
+            index: tab.index + 1,
+            url: "about:newtab"
+          });
+
+          // Remove the errant blank tab
+          await browser.tabs.remove(tab.id);
+        }
+      }
+    });
 
     this.resetBookmarksMenuItem();
   },

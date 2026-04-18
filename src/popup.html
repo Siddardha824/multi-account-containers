@@ -133,6 +133,15 @@
             </span>
         </td>
       </tr>
+      <tr class="menu-item hover-highlight keyboard-nav" id="open-new-window-in" tabindex="0">
+        <td>
+          <img class="menu-icon" alt="" src="/img/tab-new-16.svg" />
+          <span class="menu-text" data-i18n-message-id="openInNewWindowTitle"></span>
+            <span class="menu-arrow">
+              <img alt="" src="/img/arrow-icon-right.svg" />
+            </span>
+        </td>
+      </tr>
       <tr class="menu-item hover-highlight keyboard-nav" id="sort-containers-link" tabindex="0">
         <td>
           <img class="menu-icon" alt="" src="/img/sort-16_1.svg" />
@@ -276,6 +285,31 @@
     <div id="new-container-div"></div>
     <div class="scrollable identities-list">
       <table class="menu" id="picker-identities-list">
+        <tr class="menu-item hover-highlight keyboard-nav">
+          <td>
+            <div class="menu-icon">
+              <div class="usercontext-icon"
+                data-identity-icon="pet"
+                data-identity-color="blue">
+              </div>
+            </div>
+            <span class="menu-text" data-i18n-message-id="default"></span>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel menu-panel container-picker-panel hide" id="window-picker-panel">
+    <span class="popup-notification-card"></span>
+    <h3 class="title" id="window-picker-title">
+      Firefox Multi-Account Containers
+    </h3>
+    <button class="btn-return arrow-left controller keyboard-nav-back" id="close-window-picker-panel" tabindex="0"></button>
+    <hr>
+    <div id="new-window-container-div"></div>
+    <div class="scrollable identities-list">
+      <table class="menu" id="window-picker-identities-list">
         <tr class="menu-item hover-highlight keyboard-nav">
           <td>
             <div class="menu-icon">

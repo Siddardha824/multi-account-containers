@@ -371,6 +371,86 @@ const backgroundLogic = {
     return rv;
   },
 
+  async createContainerWindow(cookieStoreId) {
+    const newWindowObj = await browser.windows.create({
+      cookieStoreId: cookieStoreId
+    });
+
+    await browser.sessions.setWindowValue(newWindowObj.id, "assignedContainer", cookieStoreId);
+
+    try {
+      const containerData = await browser.contextualIdentities.get(cookieStoreId);
+
+      if (containerData && containerData.colorCode) {
+
+        // Map the default MAC string names to darker Firefox Photon hex codes
+        const darkPalette = {
+          "blue": "#003eaa",
+          "turquoise": "#008ea4",
+          "green": "#058b00",
+          "yellow": "#a47f00",
+          "orange": "#a44900",
+          "red": "#a4000f",
+          "pink": "#b5007f",
+          "purple": "#6200a4"
+        };
+
+        // Determine the replacement color (fallback to default if not found)
+        const activeColor = darkPalette[containerData.color] || containerData.colorCode;
+
+        let currentTheme = await browser.theme.getCurrent(newWindowObj.id);
+
+        // Firefox quirk: System Auto theme returns {}
+        if (!currentTheme || !currentTheme.colors || Object.keys(currentTheme.colors).length === 0) {
+          currentTheme = { colors: {} };
+
+          let isDarkMode = false;
+          try {
+            isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          } catch (e) { }
+
+          if (isDarkMode) {
+            currentTheme.colors = {
+              frame: '#1C1B22',
+              tab_background_text: '#fbfbfe',
+              toolbar: '#2B2A33',
+              toolbar_text: '#fbfbfe'
+            };
+          } else {
+            currentTheme.colors = {
+              frame: '#f9f9fb',
+              tab_background_text: '#15141a',
+              toolbar: '#ffffff',
+              toolbar_text: '#15141a'
+            };
+          }
+        }
+
+        // Apply the darker replacement color to the URL bar
+        currentTheme.colors.toolbar_field = activeColor;
+        currentTheme.colors.toolbar_field_text = '#ffffff';
+
+        // Keep the dark color when the user clicks/focuses the URL bar
+        currentTheme.colors.toolbar_field_focus = activeColor;
+        currentTheme.colors.toolbar_field_text_focus = '#ffffff';
+
+        // Provide legacy fallbacks just in case Firefox's older C++ engine requires them
+        if (currentTheme.colors.frame) {
+          currentTheme.colors.accentcolor = currentTheme.colors.frame;
+        }
+        if (currentTheme.colors.tab_background_text) {
+          currentTheme.colors.textcolor = currentTheme.colors.tab_background_text;
+        }
+
+        await browser.theme.update(newWindowObj.id, currentTheme);
+      }
+    } catch (e) {
+      console.error("Failed to apply container theme:", e);
+    }
+
+    return true;
+  },
+
   async _closeTabs(userContextId, windowId = false) {
     const cookieStoreId = this.cookieStoreId(userContextId);
     let tabs;

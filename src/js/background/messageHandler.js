@@ -71,7 +71,10 @@ const messageHandler = {
           cookieStoreId: m.cookieStoreId,
           windowId: m.windowId
         });
-        break;
+          break;
+      case "createContainerWindow":
+          response = backgroundLogic.createContainerWindow(m.cookieStoreId);
+          break;
       case "getTabs":
         response = backgroundLogic.getTabs({
           cookieStoreId: m.cookieStoreId,

@@ -24,6 +24,7 @@ const P_ONBOARDING_8 = "onboarding8";
 
 const P_CONTAINERS_LIST = "containersList";
 const OPEN_NEW_CONTAINER_PICKER = "new-tab";
+const OPEN_NEW_CONTAINER_WINDOW_PICKER = "new-container-window";
 const MANAGE_CONTAINERS_PICKER = "manage";
 const REOPEN_IN_CONTAINER_PICKER = "reopen-in";
 const ALWAYS_OPEN_IN_PICKER = "always-open-in";
@@ -760,6 +761,9 @@ Logic.registerPanel(P_CONTAINERS_LIST, {
     Utils.addEnterHandler(document.querySelector("#reopen-site-in"), () => {
       Logic.showPanel(REOPEN_IN_CONTAINER_PICKER);
     });
+    Utils.addEnterHandler(document.querySelector("#open-new-window-in"), () => {
+      Logic.showPanel(OPEN_NEW_CONTAINER_WINDOW_PICKER);
+    });
     Utils.addEnterHandler(document.querySelector("#always-open-in"), () => {
       Logic.showPanel(ALWAYS_OPEN_IN_PICKER);
     });
@@ -1126,6 +1130,76 @@ Logic.registerPanel(OPEN_NEW_CONTAINER_PICKER, {
     });
 
     const list = document.querySelector("#picker-identities-list");
+
+    list.innerHTML = "";
+    list.appendChild(fragment);
+
+    return Promise.resolve(null);
+  }
+});
+
+// OPEN_NEW_CONTAINER_WINDOW_PICKER: Opens a new container tab.
+// ----------------------------------------------------------------------------
+
+Logic.registerPanel(OPEN_NEW_CONTAINER_WINDOW_PICKER, {
+  panelSelector: "#window-picker-panel",
+
+  // This method is called when the object is registered.
+  initialize() {
+  },
+
+  // This method is called when the panel is shown.
+  prepare() {
+    const backBtn = document.querySelector("#close-window-picker-panel");
+    if (backBtn && !this._backListenerSet) {
+      Utils.addEnterHandler(backBtn, () => {
+        Logic.showPanel(P_CONTAINERS_LIST);
+      });
+      this._backListenerSet = true;
+    }
+    document.getElementById("window-picker-title").textContent = browser.i18n.getMessage("openANewWindowIn");
+    const fragment = document.createDocumentFragment();
+    const pickedFunction = function (identity) {
+      try {
+        // Send a message to the background script to create a window
+        browser.runtime.sendMessage({
+          method: "createContainerWindow",
+          cookieStoreId: identity.cookieStoreId
+        });
+        window.close();
+      } catch {
+        window.close();
+      }
+    };
+
+    document.getElementById("new-window-container-div").innerHTML = "";
+
+    Logic.identities().forEach(identity => {
+      const tr = document.createElement("tr");
+      tr.classList.add("menu-item", "hover-highlight", "keyboard-nav");
+      tr.setAttribute("tabindex", "0");
+      const td = document.createElement("td");
+
+      td.innerHTML = Utils.escaped`
+        <div class="menu-icon">
+          <div class="usercontext-icon"
+            data-identity-icon="${identity.icon}"
+            data-identity-color="${identity.color}">
+          </div>
+        </div>
+        <span class="menu-text">${identity.name}</span>`;
+
+      fragment.appendChild(tr);
+
+      tr.appendChild(td);
+
+      Utils.addEnterHandler(tr, () => {
+        pickedFunction(identity);
+      });
+
+    });
+
+    const list = document.querySelector("#window-picker-identities-list");
 
     list.innerHTML = "";
     list.appendChild(fragment);
